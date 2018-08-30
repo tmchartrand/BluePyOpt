@@ -132,8 +132,8 @@ def eaAlphaMuPlusLambdaCheckpoint(
 
         # Select the next generation parents
         parents = toolbox.select(population, mu)
-
-        logger.info(logbook.stream)
+        logbook_stream = logbook.stream
+        logger.info(logbook_stream)
 
         if(cp_filename and cp_frequency and
            gen % cp_frequency == 0):
@@ -146,5 +146,10 @@ def eaAlphaMuPlusLambdaCheckpoint(
                       rndstate=random.getstate())
             pickle.dump(cp, open(cp_filename, "wb"))
             logger.debug('Wrote checkpoint to %s', cp_filename)
+            
+            # Writing the generation statistics in a file
+            f =  open('logbook_info.txt','a')
+            f.write('%s %s \n'%(logbook_stream, cp_filename.split('.')[0]))
+            f.close()
 
     return population, logbook, history
