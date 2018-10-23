@@ -147,21 +147,21 @@ class NrnFileMorphology(Morphology, DictMixin):
         """Replace axon"""
 
         nsec = len([sec for sec in icell.axonal])
-
-        if nsec == 0:
-            ais_diams = [1, 1]
-        elif nsec == 1:
-            ais_diams = [icell.axon[0].diam, icell.axon[0].diam]
-        else:
-            ais_diams = [icell.axon[0].diam, icell.axon[0].diam]
+        ais_diams = [1, 1]
+        #if nsec == 0:
+        #    ais_diams = [1, 1]
+        #elif nsec == 1:
+        #    ais_diams = [icell.axon[0].diam, icell.axon[0].diam]
+        #else:
+        #    ais_diams = [icell.axon[0].diam, icell.axon[0].diam]
             # Define origin of distance function
-            sim.neuron.h.distance(sec=icell.soma[0])
+        #    sim.neuron.h.distance(sec=icell.soma[0])
 
-            for section in icell.axonal:
+        #    for section in icell.axonal:
                 # If distance to soma is larger than 60, store diameter
-                if sim.neuron.h.distance(0.5, sec=section) > 60:
-                    ais_diams[1] = section.diam
-                    break
+        #        if sim.neuron.h.distance(0.5, sec=section) > 60:
+        #            ais_diams[1] = section.diam
+        #            break
 
         for section in icell.axonal:
             sim.neuron.h.delete_section(sec=section)
