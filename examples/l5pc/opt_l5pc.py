@@ -63,7 +63,7 @@ def create_optimizer(args):
     else:
         map_function = None
 
-    evaluator = l5pc_evaluator.create()
+    evaluator = l5pc_evaluator.create(timed=args.timed)
     seed = os.getenv('BLUEPYOPT_SEED', args.seed)
     opt = bluepyopt.optimisations.DEAPOptimisation(
         evaluator=evaluator,
@@ -105,6 +105,7 @@ The folling environment variables are considered:
         help='plot the diversity of parameters from checkpoint pickle file')
     parser.add_argument('-v', '--verbose', action='count', dest='verbose',
                         default=0, help='-v for INFO, -vv for DEBUG')
+    parser.add_argument('--timed', action="store_true")
 
     return parser
 
