@@ -22,6 +22,7 @@ Copyright (c) 2016, EPFL/Blue Brain Project
 # pylint: disable=W0511
 
 import collections
+import time
 
 # TODO: maybe find a better name ? -> sweep ?
 import logging
@@ -65,13 +66,24 @@ class SequenceProtocol(Protocol):
 
         responses = collections.OrderedDict({})
 
+        runtime = 0
         for protocol in self.protocols:
-            responses.update(
-                protocol.run(
-                    cell_model=cell_model,
-                    param_values=param_values,
-                    sim=sim,
-                    isolate=isolate))
+            response = protocol.run(
+                cell_model=cell_model,
+                param_values=param_values,
+                sim=sim,
+                isolate=isolate)
+            runtime += response.pop('runtime', 0)
+            key_intersect = set(
+                response.keys()).intersection(set(responses.keys()))
+            
+            if len(key_intersect) != 0:
+                raise Exception(
+                    'SequenceProtocol: one of the protocols (%s) is trying to '
+                    'add already existing keys to the response: %s' %
+                    (protocol.name, key_intersect))
+
+            responses.update(response)
 
         return responses
 
@@ -131,6 +143,8 @@ class SweepProtocol(Protocol):
 
             self.instantiate(sim=sim, icell=cell_model.icell)
 
+            start_time = time.time()
+        
             try:
                 sim.run(self.total_duration, cvode_active=self.cvode_active)
             except (RuntimeError, simulators.NrnSimulatorException):
@@ -144,6 +158,9 @@ class SweepProtocol(Protocol):
                 responses = {
                     recording.name: recording.response
                     for recording in self.recordings}
+
+            end_time = time.time()
+            responses['runtime'] = end_time - start_time
 
             self.destroy(sim=sim)
 

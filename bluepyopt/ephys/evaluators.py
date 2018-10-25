@@ -211,3 +211,37 @@ class CellEvaluator(bpopt.evaluators.Evaluator):
             content += '    %s\n' % str(self.fitness_calculator)
 
         return content
+
+class CellEvaluatorTimed(CellEvaluator):
+
+    """Timed evaluation cell class"""
+    def __init__(self, max_sim_ratio=100, **kwargs):
+        self.max_sim_ratio = max_sim_ratio
+        super(CellEvaluatorTimed, self).__init__(**kwargs)
+
+    def evaluate_with_dicts(self, param_dict=None):
+        """Run evaluation with dict as input and output"""
+
+        logger.debug('Evaluating %s', self.cell_model.name)
+
+        responses = {}
+
+        for protocol in self.fitness_protocols.values():
+            results = self.run_protocol(
+                protocol,
+                param_values=param_dict,
+                isolate=self.isolate_protocols)
+            responses.update(results)
+            runtime = results.get('runtime')
+            if runtime:
+                time_ratio = 1000 * runtime / protocol.total_duration
+                if time_ratio > self.max_sim_ratio:
+                    # return self.fitness_calc_override(time_ratio, param_dict)
+                    break
+                    # should force max scores for empty traces
+
+        return self.fitness_calculator.calculate_scores(responses)
+
+    def fitness_calc_override(self, time_ratio, param_dict):
+        return {objective.name: objective.calculate_score(responses)
+                for objective in self.objectives}
