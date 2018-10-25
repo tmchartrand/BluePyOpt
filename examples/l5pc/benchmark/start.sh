@@ -9,8 +9,8 @@ mkdir -p $LOGS
 
 cd ..
 
-OFFSPRING_SIZE=100
-MAX_NGEN=100
+OFFSPRING_SIZE=128
+MAX_NGEN=$0
 
 export IPYTHONDIR=${PWD}/.ipython
 export IPYTHON_PROFILE=benchmark.${SLURM_JOBID}
@@ -24,7 +24,17 @@ CHECKPOINTS_DIR="checkpoints/run.${SLURM_JOBID}"
 mkdir -p ${CHECKPOINTS_DIR}
 
 pids=""
-for seed in {1..4}; do
+for seed in {1..2}; do
+    python opt_l5pc.py                     \
+        -vv                                \
+        --timed                            \
+        --offspring_size=${OFFSPRING_SIZE} \
+        --max_ngen=${MAX_NGEN}             \
+        --seed=${seed}                     \
+        --ipyparallel                      \
+        --start                            \
+        --checkpoint "${CHECKPOINTS_DIR}/timed_seed${seed}.pkl" &
+    pids+="$! "
     python opt_l5pc.py                     \
         -vv                                \
         --offspring_size=${OFFSPRING_SIZE} \

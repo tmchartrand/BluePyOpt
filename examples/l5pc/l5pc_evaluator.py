@@ -149,7 +149,7 @@ def define_fitness_calculator(protocols):
     return fitcalc
 
 
-def create():
+def create(timed=False):
     """Setup"""
 
     l5pc_cell = l5pc_model.create()
@@ -163,7 +163,9 @@ def create():
 
     sim = ephys.simulators.NrnSimulator()
 
-    return ephys.evaluators.CellEvaluator(
+    eval_fcn = ephys.evaluators.CellEvaluatorTimed if timed else ephys.evaluators.CellEvaluator
+
+    return eval_fcn(
         cell_model=l5pc_cell,
         param_names=param_names,
         fitness_protocols=fitness_protocols,
