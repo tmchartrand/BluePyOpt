@@ -10,7 +10,7 @@ mkdir -p $LOGS
 cd ..
 
 OFFSPRING_SIZE=128
-MAX_NGEN=$0
+MAX_NGEN=$1
 
 export IPYTHONDIR=${PWD}/.ipython
 export IPYTHON_PROFILE=benchmark.${SLURM_JOBID}
