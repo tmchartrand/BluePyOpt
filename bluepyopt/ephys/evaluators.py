@@ -137,7 +137,8 @@ class CellEvaluator(bpopt.evaluators.Evaluator):
             param_values,
             isolate=None,
             cell_model=None,
-            sim=None):
+            sim=None,
+            include_time=False):
         """Run protocol"""
 
         sim = self.sim if sim is None else sim
@@ -149,7 +150,8 @@ class CellEvaluator(bpopt.evaluators.Evaluator):
             self.cell_model if cell_model is None else cell_model,
             param_values,
             sim=sim,
-            isolate=isolate)
+            isolate=isolate,
+            include_time=include_time)
 
     def run_protocols(self, protocols, param_values):
         """Run a set of protocols"""
@@ -230,7 +232,8 @@ class CellEvaluatorTimed(CellEvaluator):
             results = self.run_protocol(
                 protocol,
                 param_values=param_dict,
-                isolate=self.isolate_protocols)
+                isolate=self.isolate_protocols,
+                include_time=True)
             responses.update(results)
             runtime = results.get('runtime')
             if runtime:
