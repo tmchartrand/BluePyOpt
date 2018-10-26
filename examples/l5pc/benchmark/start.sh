@@ -24,7 +24,7 @@ CHECKPOINTS_DIR="checkpoints/run.${SLURM_JOBID}"
 mkdir -p ${CHECKPOINTS_DIR}
 
 pids=""
-for seed in {1..2}; do
+for seed in $(seq $2); do
     python opt_l5pc.py                     \
         -vv                                \
         --timed                            \
