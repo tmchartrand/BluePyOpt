@@ -134,7 +134,7 @@ class SweepProtocol(Protocol):
 
         return collections.OrderedDict({self.name: self})
 
-    def _run_func(self, cell_model, param_values, sim=None):
+    def _run_func(self, cell_model, param_values, sim=None, include_time=False):
         """Run protocols"""
 
         try:
@@ -160,7 +160,8 @@ class SweepProtocol(Protocol):
                     for recording in self.recordings}
 
             end_time = time.time()
-            responses['runtime'] = end_time - start_time
+            if include_time:
+                responses['runtime'] = end_time - start_time
 
             self.destroy(sim=sim)
 
@@ -176,7 +177,7 @@ class SweepProtocol(Protocol):
                 "".join(
                     traceback.format_exception(*sys.exc_info())))
 
-    def run(self, cell_model, param_values, sim=None, isolate=None):
+    def run(self, cell_model, param_values, sim=None, isolate=None, include_time=False):
         """Instantiate protocol"""
 
         if isolate is None:
@@ -199,7 +200,8 @@ class SweepProtocol(Protocol):
                 kwds={
                     'cell_model': cell_model,
                     'param_values': param_values,
-                    'sim': sim})
+                    'sim': sim,
+                    'include_time': include_time})
 
             pool.terminate()
             pool.join()
