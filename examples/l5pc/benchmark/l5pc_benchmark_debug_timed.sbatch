@@ -14,4 +14,4 @@
 set -e
 set -x
 
-./start.sh 2 1
+./start_timed.sh 2 1
