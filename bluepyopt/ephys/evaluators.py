@@ -217,7 +217,7 @@ class CellEvaluator(bpopt.evaluators.Evaluator):
 class CellEvaluatorTimed(CellEvaluator):
 
     """Timed evaluation cell class"""
-    def __init__(self, max_sim_ratio=5, **kwargs):
+    def __init__(self, max_sim_ratio=3.5, **kwargs):
         self.max_sim_ratio = max_sim_ratio
         super(CellEvaluatorTimed, self).__init__(**kwargs)
 
