@@ -14,4 +14,4 @@
 set -e
 set -x
 
-./start.sh 50
+./start.sh 50 2
