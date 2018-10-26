@@ -229,8 +229,8 @@ def plot_responses(responses, fig=None, box=None):
 
 
 def get_slice(start, end, data):
-    return slice(np.searchsorted(data, start),
-                 np.searchsorted(data, end))
+    return slice(np.searchsorted(data, start)[0],
+                 np.searchsorted(data, end)[0])
 
 
 def plot_multiple_responses(responses, fig):
