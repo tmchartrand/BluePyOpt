@@ -240,6 +240,7 @@ class CellEvaluatorTimed(CellEvaluator):
                 time_ratio = 1000 * runtime / protocol.total_duration
                 if time_ratio > self.max_sim_ratio:
                     # return self.fitness_calc_override(time_ratio, param_dict)
+                    logger.debug('Short-cutting evaluation on protocol %s, runtime ratio %.2f', protocol.name, time_ratio)
                     break
                     # should force max scores for empty traces
 
