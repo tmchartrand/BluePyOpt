@@ -27,6 +27,11 @@ import pickle
 import numpy as np
 import bluepyopt.ephys as ephys
 
+import matplotlib as mpl
+if os.environ.get('DISPLAY','') == '':
+    print('no display found. Using non-interactive Agg backend')
+    mpl.use('Agg')
+
 # Parameters in release circuit model
 release_params = {
     'gNaTs2_tbar_NaTs2_t.apical': 0.026145,
