@@ -3,7 +3,7 @@
 #SBATCH --job-name=l5pc_benchmark
 #SBATCH --error=logs/l5pc_benchmark.stdout
 #SBATCH --output=logs/l5pc_benchmark.stdout
-#SBATCH -t 00:03:00
+#SBATCH -t 00:20:00
 #SBATCH -q debug
 #SBATCH -N 2
 #SBATCH -C haswell
@@ -14,4 +14,4 @@
 set -e
 set -x
 
-./start.sh 2
+./start.sh 2 1
