@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#SBATCH --job-name=l5pc_benchmark
-#SBATCH --error=logs/l5pc_benchmark.stdout
-#SBATCH --output=logs/l5pc_benchmark.stdout
+#SBATCH --job-name=l5pc_benchmark_timed
+#SBATCH --error=logs/l5pc_benchmark_timed.stdout
+#SBATCH --output=logs/l5pc_benchmark_timed.stdout
 #SBATCH -t 5:00:00
 #SBATCH -q regular
 #SBATCH -N 2
@@ -14,4 +14,4 @@
 set -e
 set -x
 
-./start.sh 50 2
+./start_timed.sh 50 2
