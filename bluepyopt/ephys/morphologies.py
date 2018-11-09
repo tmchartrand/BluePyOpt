@@ -41,13 +41,14 @@ class Morphology(BaseEPhys):
 class NrnFileMorphology(Morphology, DictMixin):
 
     """Morphology loaded from a file"""
-    SERIALIZED_FIELDS = ('morphology_path', 'do_replace_axon', 'do_set_nseg',
-                         'replace_axon_hoc', )
+    SERIALIZED_FIELDS = ('morphology_path', 'do_replace_axon', 'do_replace_axon_swc',
+                         'do_set_nseg', 'replace_axon_hoc', )
 
     def __init__(
             self,
             morphology_path,
             do_replace_axon=False,
+            do_replace_axon_swc = False,
             do_set_nseg=True,
             comment='',
             replace_axon_hoc=None):
@@ -68,6 +69,7 @@ class NrnFileMorphology(Morphology, DictMixin):
         # Path to morphology
         self.morphology_path = morphology_path
         self.do_replace_axon = do_replace_axon
+        self.do_replace_axon_swc = do_replace_axon_swc
         self.do_set_nseg = do_set_nseg
 
         if replace_axon_hoc is None:
@@ -130,6 +132,8 @@ class NrnFileMorphology(Morphology, DictMixin):
         # specify
         if self.do_replace_axon:
             self.replace_axon(sim=sim, icell=icell)
+        elif self.do_replace_axon_swc:
+             self.replace_axon_swc(sim=sim, icell=icell)
 
     def destroy(self, sim=None):
         """Destroy morphology instantiation"""
@@ -141,27 +145,54 @@ class NrnFileMorphology(Morphology, DictMixin):
 
         for section in icell.all:
             section.nseg = 1 + 2 * int(section.L / 40)
+            
+            
+    @staticmethod
+    def replace_axon_swc(sim=None, icell=None):
+        """Read the AIS diameters from the swc file"""
+
+        nsec = len([sec for sec in icell.axonal])
+        
+        if nsec == 0:
+            ais_diams = [1, 1]
+        elif nsec == 1:
+            ais_diams = [icell.axon[0].diam, icell.axon[0].diam]
+        else:
+            ais_diams = [icell.axon[0].diam, icell.axon[0].diam]
+            # Define origin of distance function
+            sim.neuron.h.distance(sec=icell.soma[0])
+
+            for section in icell.axonal:
+#                 If distance to soma is larger than 60, store diameter
+                if sim.neuron.h.distance(0.5, sec=section) > 60:
+                    ais_diams[1] = section.diam
+                    break
+
+        for section in icell.axonal:
+            sim.neuron.h.delete_section(sec=section)
+
+        # Create new axon array
+        sim.neuron.h.execute('create axon[2]', icell)
+
+        for index, section in enumerate(icell.axon):
+            section.nseg = 1
+            section.L = 30
+            section.diam = ais_diams[index]
+            icell.axonal.append(sec=section)
+            icell.all.append(sec=section)
+
+        icell.axon[0].connect(icell.soma[0], 1.0, 0.0)
+        icell.axon[1].connect(icell.axon[0], 1.0, 0.0)
+
+        logger.debug('Replace axon with AIS')
+
+
 
     @staticmethod
     def replace_axon(sim=None, icell=None):
         """Replace axon"""
-
-        nsec = len([sec for sec in icell.axonal])
+        
         ais_diams = [1, 1]
-        #if nsec == 0:
-        #    ais_diams = [1, 1]
-        #elif nsec == 1:
-        #    ais_diams = [icell.axon[0].diam, icell.axon[0].diam]
-        #else:
-        #    ais_diams = [icell.axon[0].diam, icell.axon[0].diam]
-            # Define origin of distance function
-        #    sim.neuron.h.distance(sec=icell.soma[0])
-
-        #    for section in icell.axonal:
-                # If distance to soma is larger than 60, store diameter
-        #        if sim.neuron.h.distance(0.5, sec=section) > 60:
-        #            ais_diams[1] = section.diam
-        #            break
 
         for section in icell.axonal:
             sim.neuron.h.delete_section(sec=section)
