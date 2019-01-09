@@ -28,6 +28,8 @@ logger = logging.getLogger(__name__)
 import bluepyopt as bpopt
 import bluepyopt.tools
 
+#import signal
+import time
 
 class CellEvaluator(bpopt.evaluators.Evaluator):
 
@@ -211,3 +213,34 @@ class CellEvaluator(bpopt.evaluators.Evaluator):
             content += '    %s\n' % str(self.fitness_calculator)
 
         return content
+    
+    
+class CellEvaluatorTimed(CellEvaluator):
+
+    """Timed evaluation cell class"""
+    def __init__(self, **kwargs):
+        super(CellEvaluatorTimed, self).__init__(**kwargs)
+
+    def evaluate_with_dicts(self, param_dict=None):
+        """Run evaluation with dict as input and output"""
+
+        logger.debug('Evaluating %s', self.cell_model.name)
+
+        responses = {}
+        
+        for protocol in self.fitness_protocols.values():
+
+            start_time = time.time()
+            results = self.run_protocol(
+                protocol,
+                param_values=param_dict,
+                isolate=self.isolate_protocols)
+            responses.update(results)
+                
+            end_time = time.time()
+            sim_dur = end_time - start_time
+            if sim_dur > 120:
+                print 'Simulation cut-off'
+                break
+        return self.fitness_calculator.calculate_scores(responses)
+
