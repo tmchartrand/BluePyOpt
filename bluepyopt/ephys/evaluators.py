@@ -23,7 +23,13 @@ Copyright (c) 2016, EPFL/Blue Brain Project
 # pylint: disable=W0511
 
 import logging
-logger = logging.getLogger(__name__)
+
+from IPython.config import Application
+
+logging.basicConfig(level=logging.DEBUG) 
+logger = Application.instance().log
+#logger = logging.getLogger(__name__)
+
 
 import bluepyopt as bpopt
 import bluepyopt.tools
