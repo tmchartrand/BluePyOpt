@@ -23,7 +23,9 @@ Copyright (c) 2016, EPFL/Blue Brain Project
 # pylint: disable=W0511
 
 import logging
+logging.basicConfig(level=logging.DEBUG) 
 logger = logging.getLogger(__name__)
+
 
 import bluepyopt as bpopt
 import bluepyopt.tools
