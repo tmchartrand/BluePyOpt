@@ -24,11 +24,11 @@ Copyright (c) 2016, EPFL/Blue Brain Project
 
 import logging
 
-from IPython.config import Application
+#from traitlets.config import Application
 
 logging.basicConfig(level=logging.DEBUG) 
-logger = Application.instance().log
-#logger = logging.getLogger(__name__)
+#logger = Application.instance().log
+logger = logging.getLogger(__name__)
 
 
 
