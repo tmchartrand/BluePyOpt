@@ -24,9 +24,8 @@ Copyright (c) 2016, EPFL/Blue Brain Project
 
 import logging
 
-#from traitlets.config import Application
+#from IPython.config import Application
 
-logging.basicConfig(level=logging.DEBUG) 
 #logger = Application.instance().log
 logger = logging.getLogger(__name__)
 
@@ -35,7 +34,7 @@ logger = logging.getLogger(__name__)
 import bluepyopt as bpopt
 import bluepyopt.tools
 
-import time
+#import time
 
 
 class CellEvaluator(bpopt.evaluators.Evaluator):
@@ -187,7 +186,20 @@ class CellEvaluator(bpopt.evaluators.Evaluator):
             param_dict)
 
         return self.fitness_calculator.calculate_scores(responses)
+    
+    def save_response_lists(self, param_list=None):
+        """Run simulation with lists as input and outputs"""
+        
+        param_dict = self.param_dict(param_list)
+        logger.debug('Evaluating %s', self.cell_model.name)
 
+        responses = self.run_protocols(
+            self.fitness_protocols.values(),
+            param_dict)
+        return [responses]
+
+    
+    
     def evaluate_with_lists(self, param_list=None):
         """Run evaluation with lists as input and outputs"""
 
@@ -243,7 +255,7 @@ class CellEvaluatorTimed(CellEvaluator):
            
         # Change the behavior of SIGALRM
         signal.signal(signal.SIGALRM, timeout_handler)
-
+        logger.error('Here')
         responses = {}
         for protocol in self.fitness_protocols.values():
            signal.alarm(2*60)  #  cut-off for simulation
@@ -256,7 +268,7 @@ class CellEvaluatorTimed(CellEvaluator):
                 responses.update(results)
             
            except TimeoutException:
-               logger.debug('Simulation missed 5 min cut-off for protocol %s'%protocol.name)
+               logger.error('Simulation missed the deadline for protocol %s'%protocol.name)
                continue
            else:
                # Reset the alarm

@@ -203,6 +203,9 @@ class DEAPOptimisation(bluepyopt.optimisations.Optimisation):
         # Register the evaluation function for the individuals
         # import deap_efel_eval1
         self.toolbox.register("evaluate", self.evaluator.evaluate_with_lists)
+        
+        # Register the save simulation function with the individuals
+        self.toolbox.register("save_sim_response", self.evaluator.save_response_lists)
 
         # Register the mate operator
         self.toolbox.register(
