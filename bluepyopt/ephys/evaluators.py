@@ -269,6 +269,7 @@ class CellEvaluatorTimed(CellEvaluator):
             
            except TimeoutException:
                logger.error('Simulation missed the deadline for protocol %s'%protocol.name)
+
                continue
            else:
                # Reset the alarm
