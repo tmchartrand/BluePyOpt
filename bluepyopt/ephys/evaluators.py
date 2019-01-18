@@ -255,7 +255,7 @@ class CellEvaluatorTimed(CellEvaluator):
            
         # Change the behavior of SIGALRM
         signal.signal(signal.SIGALRM, timeout_handler)
-        logger.error('Here')
+#        logger.error('Here')
         responses = {}
         for protocol in self.fitness_protocols.values():
            signal.alarm(2*60)  #  cut-off for simulation
@@ -269,6 +269,7 @@ class CellEvaluatorTimed(CellEvaluator):
             
            except TimeoutException:
                logger.error('Simulation missed the deadline for protocol %s'%protocol.name)
+
                continue
            else:
                # Reset the alarm
