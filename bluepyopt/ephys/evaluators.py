@@ -197,6 +197,12 @@ class CellEvaluator(bpopt.evaluators.Evaluator):
             self.fitness_protocols.values(),
             param_dict)
         return [responses]
+    
+    def evaluate_from_responses(self, response_list = None):
+        """Run evaluation with response dictionary as input"""
+        
+        response_dict = response_list[0]
+        return self.fitness_calculator.calculate_scores(response_dict)
 
     
     

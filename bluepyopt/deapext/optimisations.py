@@ -206,6 +206,9 @@ class DEAPOptimisation(bluepyopt.optimisations.Optimisation):
         
         # Register the save simulation function with the individuals
         self.toolbox.register("save_sim_response", self.evaluator.save_response_lists)
+        
+        # Register the evaluation function from the responses
+        self.toolbox.register("evaluate_response", self.evaluator.evaluate_from_responses)
 
         # Register the mate operator
         self.toolbox.register(
