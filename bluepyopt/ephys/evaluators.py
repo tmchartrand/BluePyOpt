@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 import bluepyopt as bpopt
 import bluepyopt.tools
 
-#import time
+import time
 
 
 class CellEvaluator(bpopt.evaluators.Evaluator):
@@ -250,37 +250,22 @@ class CellEvaluatorTimed(CellEvaluator):
         """Run evaluation with dict as input and output"""
 
         logger.debug('Evaluating %s', self.cell_model.name)
-        
-        import signal
-        
-        class TimeoutException(Exception):   # Custom exception class
-           pass
-        
-        def timeout_handler(signum, frame):   # Custom signal handler
-           raise TimeoutException
-           
-        # Change the behavior of SIGALRM
-        signal.signal(signal.SIGALRM, timeout_handler)
-#        logger.error('Here')
+
         responses = {}
+        
         for protocol in self.fitness_protocols.values():
-           signal.alarm(2*60)  #  cut-off for simulation
-           try:
-#                start_time = time.time()
-                results = self.run_protocol(
-                    protocol,
-                    param_values=param_dict,
-                    isolate=self.isolate_protocols)
-                responses.update(results)
-            
-           except TimeoutException:
-               logger.error('Simulation missed the deadline for protocol %s'%protocol.name)
 
-               continue
-           else:
-               # Reset the alarm
-               signal.alarm(0)
-
-
+            start_time = time.time()
+            results = self.run_protocol(
+                protocol,
+                param_values=param_dict,
+                isolate=self.isolate_protocols)
+            responses.update(results)
+                
+            end_time = time.time()
+            sim_dur = end_time - start_time
+            if sim_dur > 300:
+                print 'Simulation cut-off'
+                break
         return self.fitness_calculator.calculate_scores(responses)
 
