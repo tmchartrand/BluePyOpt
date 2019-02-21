@@ -265,7 +265,7 @@ class CellEvaluatorTimed(CellEvaluator):
             end_time = time.time()
             sim_dur = end_time - start_time
             if sim_dur > 300:
-                print 'Simulation cut-off'
+                logger.debug('Simulation cut-off')
                 break
         return self.fitness_calculator.calculate_scores(responses)
 
