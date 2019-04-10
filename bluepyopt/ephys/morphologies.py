@@ -133,7 +133,7 @@ class NrnFileMorphology(Morphology, DictMixin):
         if self.do_replace_axon:
             self.replace_axon(sim=sim, icell=icell)
         elif self.stub_axon:
-            self.stub_axon(sim=sim, icell=icell)
+            self.replace_axon_with_stub(sim=sim, icell=icell)
 
     def destroy(self, sim=None):
         """Destroy morphology instantiation"""
@@ -189,8 +189,8 @@ class NrnFileMorphology(Morphology, DictMixin):
 
 
     @staticmethod
-    def stub_axon(sim=None, icell=None):
-        """Replace axon"""
+    def replace_axon_with_stub(sim=None, icell=None):
+        """Replace axon with 60 micron stub"""
         
         ais_diams = [1, 1]
 
