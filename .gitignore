@@ -5,3 +5,7 @@ x86_64
 /build/
 /dist/
 .DS_Store
+/.tox
+.ipynb_checkpoints
+/.python-version
+/cov_reports

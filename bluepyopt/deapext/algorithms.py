@@ -152,4 +152,4 @@ def eaAlphaMuPlusLambdaCheckpoint(
             f.write('%s %s \n'%(logbook_stream, cp_filename.split('.')[0]))
             f.close()
 
-    return population, logbook, history
+    return population, halloffame, logbook, history
