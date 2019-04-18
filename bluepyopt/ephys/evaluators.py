@@ -253,17 +253,17 @@ class CellEvaluatorTimed(CellEvaluator):
         super(CellEvaluatorTimed, self).__init__(**kwargs)
         self.eval_stat_dir = kwargs.get('eval_stat_dir',\
                                 os.path.join(os.getcwd(),'eval_stat'))
-        
+
         if not os.path.exists(self.eval_stat_dir):
             try:
                 os.makedirs(self.eval_stat_dir)
             except OSError as exc: # Guard against race condition
                 if exc.errno != errno.EEXIST:
                     raise
-                    
+
         self.timeout_thresh = kwargs.get('timeout',300)
         self.eval_range = kwargs.get('eval_range',2)
-    
+
     def evaluate_with_dicts(self, param_dict=None):
         """Run evaluation with dict as input and output"""
 
@@ -272,27 +272,27 @@ class CellEvaluatorTimed(CellEvaluator):
         responses = {}
 
         for protocol in self.fitness_protocols.values():
-            
+
             proto_stat_pattern = glob.glob(os.path.join(self.eval_stat_dir,\
                                                         '%s*'%protocol.name))
             try:
                 proto_stat = [int(pickle.load(open(file_,'rb')))+1 \
                               for file_ in proto_stat_pattern]
-               
+
                 proto_stat_thresh = max(set(proto_stat), key=proto_stat.count) \
-                            if len(proto_stat)>1e3 else self.timeout_thresh # Mode
+                            if len(proto_stat)>4e1 else self.timeout_thresh # Mode
                 print('Mode for sim duration = {} seconds'.format(proto_stat_thresh))
             except:
                 proto_stat_thresh = self.timeout_thresh
-            
+
             timeout_var = min(proto_stat_thresh,self.timeout_thresh)
-            
+
             def run_func(return_dict):
                 results = self.run_protocol(
                     protocol,
                     param_values=param_dict,
                     isolate=self.isolate_protocols)
-                
+
                 return_dict['resp'] = results
 
 
@@ -304,11 +304,11 @@ class CellEvaluatorTimed(CellEvaluator):
                 :param args: The functions args, given as tuple
                 :param kwargs: The functions keywords, given as dict
                 :param timeout: The time limit in seconds
-                
+
                 """
                 manager = Manager()
                 return_dict = manager.dict()
-                p = Process(target=func, args=(return_dict,), 
+                p = Process(target=func, args=(return_dict,),
                                         kwargs=kwargs)
                 p.start()
                 p.join(timeout)
@@ -318,14 +318,14 @@ class CellEvaluatorTimed(CellEvaluator):
                           %(protocol.name,timeout))
                 del p
                 return return_dict
-            
-            start_time = time.time()    
+
+            start_time = time.time()
             resp_dict= timed_sim(run_func,(),{},timeout_var)
             end_time = time.time()
             sim_dur = end_time - start_time
             print('Simulation duration = {t} seconds for protocol {proto}'\
                   .format(t=sim_dur,proto=protocol.name))
-            
+
             if bool(resp_dict):
                 responses.update(resp_dict['resp'])
                 rnd_str = ''.join([random.choice(string.ascii_letters + string.digits) \
