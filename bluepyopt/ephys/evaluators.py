@@ -261,8 +261,8 @@ class CellEvaluatorTimed(CellEvaluator):
                 if exc.errno != errno.EEXIST:
                     raise
                     
-        self.timeout_thresh = kwargs.get('timeout',5)
-        
+        self.timeout_thresh = kwargs.get('timeout',300)
+        self.eval_range = kwargs.get('eval_range',2)
     
     def evaluate_with_dicts(self, param_dict=None):
         """Run evaluation with dict as input and output"""
@@ -278,11 +278,14 @@ class CellEvaluatorTimed(CellEvaluator):
             try:
                 proto_stat = [int(pickle.load(open(file_,'rb')))+1 \
                               for file_ in proto_stat_pattern]
-                proto_stat_mean = np.mean(proto_stat) if len(proto_stat)>1e3 else \
-                            self.timeout_thresh
+               
+                proto_stat_thresh = max(set(proto_stat), key=proto_stat.count) \
+                            if len(proto_stat)>1e3 else self.timeout_thresh # Mode
+                print('Mode for sim duration = {} seconds'.format(proto_stat_thresh))
             except:
-                proto_stat_mean = self.timeout_thresh
-            timeout_var = min(proto_stat_mean,self.timeout_thresh)
+                proto_stat_thresh = self.timeout_thresh
+            
+            timeout_var = min(proto_stat_thresh,self.timeout_thresh)
             
             def run_func(return_dict):
                 results = self.run_protocol(
@@ -326,7 +329,7 @@ class CellEvaluatorTimed(CellEvaluator):
             if bool(resp_dict):
                 responses.update(resp_dict['resp'])
                 rnd_str = ''.join([random.choice(string.ascii_letters + string.digits) \
-                                   for n in range(10)])
+                                   for n in range(self.eval_range)])
                 stat_filename = '%s_%s.pkl'%(protocol.name,rnd_str)
                 stat_filepath = os.path.join(self.eval_stat_dir,stat_filename)
                 with open(stat_filepath, "wb") as stat:
