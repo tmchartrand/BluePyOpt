@@ -23,19 +23,24 @@ Copyright (c) 2016, EPFL/Blue Brain Project
 # pylint: disable=W0511
 
 import logging
-
-#from IPython.config import Application
-
-#logger = Application.instance().log
-logger = logging.getLogger(__name__)
-
-
-
+from multiprocessing import Process,Manager
 import bluepyopt as bpopt
 import bluepyopt.tools
-
 import time
+import os,errno
+import pickle
+import string
+import random
+import glob
+import numpy as np
 
+logger = logging.getLogger(__name__)
+
+class TimeoutException(Exception):   # Custom exception class
+   pass
+
+def timeout_handler(signum, frame):   # Custom signal handler
+   raise TimeoutException
 
 class CellEvaluator(bpopt.evaluators.Evaluator):
 
@@ -49,7 +54,8 @@ class CellEvaluator(bpopt.evaluators.Evaluator):
             fitness_calculator=None,
             isolate_protocols=None,
             sim=None,
-            use_params_for_seed=False):
+            use_params_for_seed=False,
+            **kwargs):
         """Constructor
 
         Args:
@@ -186,10 +192,10 @@ class CellEvaluator(bpopt.evaluators.Evaluator):
             param_dict)
 
         return self.fitness_calculator.calculate_scores(responses)
-    
+
     def save_response_lists(self, param_list=None):
         """Run simulation with lists as input and outputs"""
-        
+
         param_dict = self.param_dict(param_list)
         logger.debug('Evaluating %s', self.cell_model.name)
 
@@ -197,15 +203,15 @@ class CellEvaluator(bpopt.evaluators.Evaluator):
             self.fitness_protocols.values(),
             param_dict)
         return [responses]
-    
+
     def evaluate_from_responses(self, response_list = None):
         """Run evaluation with response dictionary as input"""
-        
+
         response_dict = response_list[0]
         return self.fitness_calculator.calculate_scores(response_dict)
 
-    
-    
+
+
     def evaluate_with_lists(self, param_list=None):
         """Run evaluation with lists as input and outputs"""
 
@@ -238,34 +244,93 @@ class CellEvaluator(bpopt.evaluators.Evaluator):
             content += '    %s\n' % str(self.fitness_calculator)
 
         return content
-    
-    
+
+
 class CellEvaluatorTimed(CellEvaluator):
 
     """Timed evaluation cell class"""
     def __init__(self, **kwargs):
         super(CellEvaluatorTimed, self).__init__(**kwargs)
-
+        self.eval_stat_dir = kwargs.get('eval_stat_dir',\
+                                os.path.join(os.getcwd(),'eval_stat'))
+        
+        if not os.path.exists(self.eval_stat_dir):
+            try:
+                os.makedirs(self.eval_stat_dir)
+            except OSError as exc: # Guard against race condition
+                if exc.errno != errno.EEXIST:
+                    raise
+                    
+        self.timeout_thresh = kwargs.get('timeout',5)
+        
+    
     def evaluate_with_dicts(self, param_dict=None):
         """Run evaluation with dict as input and output"""
 
         logger.debug('Evaluating %s', self.cell_model.name)
 
         responses = {}
-        
-        for protocol in self.fitness_protocols.values():
 
-            start_time = time.time()
-            results = self.run_protocol(
-                protocol,
-                param_values=param_dict,
-                isolate=self.isolate_protocols)
-            responses.update(results)
+        for protocol in self.fitness_protocols.values():
+            
+            proto_stat_pattern = glob.glob(os.path.join(self.eval_stat_dir,\
+                                                        '%s*'%protocol.name))
+            try:
+                proto_stat = [int(pickle.load(open(file_,'rb')))+1 \
+                              for file_ in proto_stat_pattern]
+                proto_stat_mean = np.mean(proto_stat) if len(proto_stat)>1e3 else \
+                            self.timeout_thresh
+            except:
+                proto_stat_mean = self.timeout_thresh
+            timeout_var = min(proto_stat_mean,self.timeout_thresh)
+            
+            def run_func(return_dict):
+                results = self.run_protocol(
+                    protocol,
+                    param_values=param_dict,
+                    isolate=self.isolate_protocols)
                 
+                return_dict['resp'] = results
+
+
+
+            def timed_sim(func, args, kwargs, timeout):
+                """Runs a function with time limit
+
+                :param func: The function to run
+                :param args: The functions args, given as tuple
+                :param kwargs: The functions keywords, given as dict
+                :param timeout: The time limit in seconds
+                
+                """
+                manager = Manager()
+                return_dict = manager.dict()
+                p = Process(target=func, args=(return_dict,), 
+                                        kwargs=kwargs)
+                p.start()
+                p.join(timeout)
+                if p.is_alive():
+                    p.terminate()
+                    print('Simulation missed cut-off for protocol %s @%s seconds'\
+                          %(protocol.name,timeout))
+                del p
+                return return_dict
+            
+            start_time = time.time()    
+            resp_dict= timed_sim(run_func,(),{},timeout_var)
             end_time = time.time()
             sim_dur = end_time - start_time
-            if sim_dur > 300:
-                logger.debug('Simulation cut-off')
-                break
+            print('Simulation duration = {t} seconds for protocol {proto}'\
+                  .format(t=sim_dur,proto=protocol.name))
+            
+            if bool(resp_dict):
+                responses.update(resp_dict['resp'])
+                rnd_str = ''.join([random.choice(string.ascii_letters + string.digits) \
+                                   for n in range(10)])
+                stat_filename = '%s_%s.pkl'%(protocol.name,rnd_str)
+                stat_filepath = os.path.join(self.eval_stat_dir,stat_filename)
+                with open(stat_filepath, "wb") as stat:
+                    pickle.dump(sim_dur,stat)
+
         return self.fitness_calculator.calculate_scores(responses)
 
