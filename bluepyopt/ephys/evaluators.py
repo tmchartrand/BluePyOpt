@@ -254,15 +254,18 @@ class CellEvaluatorTimed(CellEvaluator):
         self.eval_stat_dir = kwargs.get('eval_stat_dir',\
                                 os.path.join(os.getcwd(),'eval_stat'))
 
-        if not os.path.exists(self.eval_stat_dir):
-            try:
-                os.makedirs(self.eval_stat_dir)
-            except OSError as exc: # Guard against race condition
-                if exc.errno != errno.EEXIST:
-                    raise
+        
 
         self.timeout_thresh = kwargs.get('timeout',300)
         self.eval_range = kwargs.get('eval_range',2)
+        self.cutoff_mode = kwargs.get('cutoff_mode')
+        if self.cutoff_mode:
+            if not os.path.exists(self.eval_stat_dir):
+                try:
+                    os.makedirs(self.eval_stat_dir)
+                except OSError as exc: # Guard against race condition
+                    if exc.errno != errno.EEXIST:
+                        raise
 
     def evaluate_with_dicts(self, param_dict=None):
         """Run evaluation with dict as input and output"""
@@ -273,16 +276,19 @@ class CellEvaluatorTimed(CellEvaluator):
 
         for protocol in self.fitness_protocols.values():
 
-            proto_stat_pattern = glob.glob(os.path.join(self.eval_stat_dir,\
-                                                        '%s*'%protocol.name))
-            try:
-                proto_stat = [int(pickle.load(open(file_,'rb')))+1 \
-                              for file_ in proto_stat_pattern]
-
-                proto_stat_thresh = max(set(proto_stat), key=proto_stat.count) \
-                            if len(proto_stat)>4e1 else self.timeout_thresh # Mode
-                print('Mode for sim duration = {} seconds'.format(proto_stat_thresh))
-            except:
+            if self.cutoff_mode:
+                try:
+                    proto_stat_pattern = glob.glob(os.path.join(self.eval_stat_dir,\
+                                                            '%s*'%protocol.name))
+                    proto_stat = [int(pickle.load(open(file_,'rb')))+1 \
+                                  for file_ in proto_stat_pattern]
+    
+                    proto_stat_thresh = max(set(proto_stat), key=proto_stat.count) \
+                                if len(proto_stat)>4e1 else self.timeout_thresh # Mode
+                    print('Mode for sim duration = {} seconds'.format(proto_stat_thresh))
+                except:
+                    proto_stat_thresh = self.timeout_thresh
+            else:
                 proto_stat_thresh = self.timeout_thresh
 
             timeout_var = min(proto_stat_thresh,self.timeout_thresh)
@@ -328,12 +334,14 @@ class CellEvaluatorTimed(CellEvaluator):
 
             if bool(resp_dict):
                 responses.update(resp_dict['resp'])
-                rnd_str = ''.join([random.choice(string.ascii_letters + string.digits) \
-                                   for n in range(self.eval_range)])
-                stat_filename = '%s_%s.pkl'%(protocol.name,rnd_str)
-                stat_filepath = os.path.join(self.eval_stat_dir,stat_filename)
-                with open(stat_filepath, "wb") as stat:
-                    pickle.dump(sim_dur,stat)
+                
+                if self.cutoff_mode:
+                    rnd_str = ''.join([random.choice(string.ascii_letters + string.digits) \
+                                       for n in range(self.eval_range)])
+                    stat_filename = '%s_%s.pkl'%(protocol.name,rnd_str)
+                    stat_filepath = os.path.join(self.eval_stat_dir,stat_filename)
+                    with open(stat_filepath, "wb") as stat:
+                        pickle.dump(sim_dur,stat)
 
         return self.fitness_calculator.calculate_scores(responses)
 
