@@ -27,22 +27,27 @@ import logging
 
 import deap.algorithms
 import deap.tools
+import functools
 import pickle
+import numpy as np
 
 logger = logging.getLogger('__main__')
 
 
-def _evaluate_invalid_fitness(toolbox, population):
+def _evaluate_invalid_fitness(toolbox, population, eval_stat = 300):
     '''Evaluate the individuals with an invalid fitness
 
     Returns the count of individuals with invalid fitness
     '''
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
-    fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
+    fitnesses_with_times = toolbox.map(functools.partial(toolbox.evaluate,\
+                                  timeout_stat = eval_stat), invalid_ind)
+    fitnesses = [fitness_ for fitness_,_ in fitnesses_with_times]
+    eval_times = [times_ for _,times_ in fitnesses_with_times]
     for ind, fit in zip(invalid_ind, fitnesses):
         ind.fitness.values = fit
 
-    return len(invalid_ind)
+    return len(invalid_ind),eval_times
 
 
 def _update_history_and_hof(halloffame, history, population):
@@ -81,6 +86,7 @@ def eaAlphaMuPlusLambdaCheckpoint(
         cp_frequency=1,
         cp_filename=None,
         continue_cp=False,
+        eval_stat_default = 300,
         **kwargs):
     r"""This is the :math:`(~\alpha,\mu~,~\lambda)` evolutionary algorithm
 
@@ -97,7 +103,8 @@ def eaAlphaMuPlusLambdaCheckpoint(
         cp_filename(string): path to checkpoint filename
         continue_cp(bool): whether to continue
     """
-
+    eval_time_stats = []
+    
     if continue_cp:
         # A file name has been given, then load the data from the file
         cp = pickle.load(open(cp_filename, "r"))
@@ -117,17 +124,22 @@ def eaAlphaMuPlusLambdaCheckpoint(
         history = deap.tools.History()
 
         # TODO this first loop should be not be repeated !
-        invalid_count = _evaluate_invalid_fitness(toolbox, population)
+        invalid_count,eval_times = _evaluate_invalid_fitness(toolbox, population)
         _update_history_and_hof(halloffame, history, population)
         _record_stats(stats, logbook, start_gen, population, invalid_count)
 
+    eval_time_stats.extend(eval_times)
+    eval_time_stats = [int(eval_time_) if eval_time_ is not None else eval_stat_default \
+                       for eval_time_ in eval_time_stats]
+    
     # Begin the generational process
     for gen in range(start_gen + 1, ngen + 1):
         offspring = _get_offspring(parents, toolbox, cxpb, mutpb)
 
         population = parents + offspring
 
-        invalid_count = _evaluate_invalid_fitness(toolbox, offspring)
+        invalid_count,eval_times = _evaluate_invalid_fitness(toolbox, offspring,
+                                     eval_stat = np.mean(eval_time_stats))
         _update_history_and_hof(halloffame, history, population)
         _record_stats(stats, logbook, gen, population, invalid_count)
 
@@ -158,5 +170,10 @@ def eaAlphaMuPlusLambdaCheckpoint(
             pickle.dump(cp, open(cp_backup, "wb"))
             logger.debug('Wrote checkpoint backup to %s',cp_backup)
             
-
+        eval_time_stats.extend(eval_times)
+        eval_time_stats = [int(eval_time_) if eval_time_ is not None else eval_stat_default \
+                       for eval_time_ in eval_time_stats]
+        if len(eval_time_stats) > 2*len(population):
+            eval_time_stats = eval_time_stats[2*len(population):]
+        
     return population, halloffame, logbook, history

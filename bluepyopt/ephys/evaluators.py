@@ -28,7 +28,6 @@ import bluepyopt as bpopt
 import bluepyopt.tools
 import time
 import os,errno
-import pickle
 import string
 import random
 import glob
@@ -191,7 +190,7 @@ class CellEvaluator(bpopt.evaluators.Evaluator):
             self.fitness_protocols.values(),
             param_dict)
 
-        return self.fitness_calculator.calculate_scores(responses)
+        return self.fitness_calculator.calculate_scores(responses),None
 
     def save_response_lists(self, param_list=None):
         """Run simulation with lists as input and outputs"""
@@ -212,14 +211,15 @@ class CellEvaluator(bpopt.evaluators.Evaluator):
 
 
 
-    def evaluate_with_lists(self, param_list=None):
+    def evaluate_with_lists(self, param_list=None,timeout_stat=None):
         """Run evaluation with lists as input and outputs"""
 
         param_dict = self.param_dict(param_list)
+        print(timeout_stat)
+        obj_dict,sim_dur = self.evaluate_with_dicts(param_dict=param_dict,
+                                            timeout_stat= timeout_stat)
 
-        obj_dict = self.evaluate_with_dicts(param_dict=param_dict)
-
-        return self.objective_list(obj_dict)
+        return self.objective_list(obj_dict),sim_dur
 
     def evaluate(self, param_list=None):
         """Run evaluation with lists as input and outputs"""
@@ -267,9 +267,11 @@ class CellEvaluatorTimed(CellEvaluator):
                     if exc.errno != errno.EEXIST:
                         raise
     
-    def evaluate_with_dicts(self, param_dict=None):
+    def evaluate_with_dicts(self, param_dict=None,timeout_stat = None):
         """Run evaluation with dict as input and output"""
-
+        
+        if timeout_stat:
+            print('time out stats {} seconds'.format(timeout_stat))
         if self.fitness_calculator is None:
             raise Exception(
                 'CellEvaluator: need fitness_calculator to evaluate')
@@ -308,12 +310,12 @@ class CellEvaluatorTimed(CellEvaluator):
             return return_dict
         
         start_time = time.time()
-        resp_dict= timed_sim(run_func,(),{},self.timeout_thresh)
+        resp_dict= timed_sim(run_func,(),{},min(self.timeout_thresh,timeout_stat))
         end_time = time.time()
         sim_dur = end_time - start_time
         print('Simulation duration = {t} seconds for the individual'\
               .format(t=sim_dur))
-        return self.fitness_calculator.calculate_scores(resp_dict.get('resp',{}))
+        return self.fitness_calculator.calculate_scores(resp_dict.get('resp',{})),sim_dur
 
 
 #    def evaluate_with_dicts(self, param_dict=None):
