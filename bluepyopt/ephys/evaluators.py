@@ -139,9 +139,9 @@ class CellEvaluator(bpopt.evaluators.Evaluator):
 
         sorted_keys = sorted(param_dict.keys())
 
-        string = ''
+        string_ = ''
         for key in sorted_keys:
-            string += '%s%s' % (key, str(param_dict[key]))
+            string_ += '%s%s' % (key, str(param_dict[key]))
 
         return bluepyopt.tools.uint32_seed(string)
 
@@ -266,82 +266,129 @@ class CellEvaluatorTimed(CellEvaluator):
                 except OSError as exc: # Guard against race condition
                     if exc.errno != errno.EEXIST:
                         raise
-
+    
     def evaluate_with_dicts(self, param_dict=None):
         """Run evaluation with dict as input and output"""
 
+        if self.fitness_calculator is None:
+            raise Exception(
+                'CellEvaluator: need fitness_calculator to evaluate')
+
         logger.debug('Evaluating %s', self.cell_model.name)
+        
+        def run_func(return_dict):
+            results = self.run_protocols(
+                self.fitness_protocols.values(),
+                param_dict)
 
-        responses = {}
-
-        for protocol in self.fitness_protocols.values():
-
-            if self.cutoff_mode:
-                try:
-                    proto_stat_pattern = glob.glob(os.path.join(self.eval_stat_dir,\
-                                                            '%s*'%protocol.name))
-                    proto_stat = [int(pickle.load(open(file_,'rb')))+1 \
-                                  for file_ in proto_stat_pattern]
-    
-                    proto_stat_thresh = max(set(proto_stat), key=proto_stat.count) \
-                                if len(proto_stat)>4e1 else self.timeout_thresh # Mode
-                    print('Mode for sim duration = {} seconds'.format(proto_stat_thresh))
-                except:
-                    proto_stat_thresh = self.timeout_thresh
-            else:
-                proto_stat_thresh = self.timeout_thresh
-
-            timeout_var = min(proto_stat_thresh,self.timeout_thresh)
-
-            def run_func(return_dict):
-                results = self.run_protocol(
-                    protocol,
-                    param_values=param_dict,
-                    isolate=self.isolate_protocols)
-
-                return_dict['resp'] = results
+            return_dict['resp'] = results
 
 
 
-            def timed_sim(func, args, kwargs, timeout):
-                """Runs a function with time limit
+        def timed_sim(func, args, kwargs, timeout):
+            """Runs a function with time limit
 
-                :param func: The function to run
-                :param args: The functions args, given as tuple
-                :param kwargs: The functions keywords, given as dict
-                :param timeout: The time limit in seconds
+            :param func: The function to run
+            :param args: The functions args, given as tuple
+            :param kwargs: The functions keywords, given as dict
+            :param timeout: The time limit in seconds
 
-                """
-                manager = Manager()
-                return_dict = manager.dict()
-                p = Process(target=func, args=(return_dict,),
-                                        kwargs=kwargs)
-                p.start()
-                p.join(timeout)
-                if p.is_alive():
-                    p.terminate()
-                    print('Simulation missed cut-off for protocol %s @%s seconds'\
-                          %(protocol.name,timeout))
-                del p
-                return return_dict
+            """
+            manager = Manager()
+            return_dict = manager.dict()
+            p = Process(target=func, args=(return_dict,),
+                                    kwargs=kwargs)
+            p.start()
+            p.join(timeout)
+            if p.is_alive():
+                p.terminate()
+                print('Individual missed cut-off @%s seconds'\
+                      %timeout)
+            del p
+            return return_dict
+        
+        start_time = time.time()
+        resp_dict= timed_sim(run_func,(),{},self.timeout_thresh)
+        end_time = time.time()
+        sim_dur = end_time - start_time
+        print('Simulation duration = {t} seconds for the individual'\
+              .format(t=sim_dur))
+        return self.fitness_calculator.calculate_scores(resp_dict.get('resp',{}))
 
-            start_time = time.time()
-            resp_dict= timed_sim(run_func,(),{},timeout_var)
-            end_time = time.time()
-            sim_dur = end_time - start_time
-            print('Simulation duration = {t} seconds for protocol {proto}'\
-                  .format(t=sim_dur,proto=protocol.name))
 
-            if bool(resp_dict):
-                responses.update(resp_dict['resp'])
-                
-                if self.cutoff_mode:
-                    rnd_str = ''.join([random.choice(string.ascii_letters + string.digits) \
-                                       for n in range(self.eval_range)])
-                    stat_filename = '%s_%s.pkl'%(protocol.name,rnd_str)
-                    stat_filepath = os.path.join(self.eval_stat_dir,stat_filename)
-                    with open(stat_filepath, "wb") as stat:
-                        pickle.dump(sim_dur,stat)
-
-        return self.fitness_calculator.calculate_scores(responses)
-
+#    def evaluate_with_dicts(self, param_dict=None):
+#        """Run evaluation with dict as input and output"""
+#
+#        logger.debug('Evaluating %s', self.cell_model.name)
+#
+#        responses = {}
+#
+#        for protocol in self.fitness_protocols.values():
+#            proto_stat_thresh = self.timeout_thresh
+#            if self.cutoff_mode:
+#                try:
+#                    proto_stat_pattern = glob.glob(os.path.join(self.eval_stat_dir,\
+#                                                            '%s*'%protocol.name))
+#                    proto_stat = [int(pickle.load(open(file_,'rb')))+1 \
+#                                  for file_ in proto_stat_pattern]
+#    
+#                    proto_stat_thresh = max(set(proto_stat), key=proto_stat.count) \
+#                                if len(proto_stat)>4e1 else self.timeout_thresh # Mode
+#                    print('Mode for sim duration = {} seconds'.format(proto_stat_thresh))
+#                except:
+#                    pass
+#
+#            timeout_var = min(proto_stat_thresh,self.timeout_thresh)
+#
+#            def run_func(return_dict):
+#                results = self.run_protocol(
+#                    protocol,
+#                    param_values=param_dict,
+#                    isolate=self.isolate_protocols)
+#
+#                return_dict['resp'] = results
+#
+#
+#
+#            def timed_sim(func, args, kwargs, timeout):
+#                """Runs a function with time limit
+#
+#                :param func: The function to run
+#                :param args: The functions args, given as tuple
+#                :param kwargs: The functions keywords, given as dict
+#                :param timeout: The time limit in seconds
+#
+#                """
+#                manager = Manager()
+#                return_dict = manager.dict()
+#                p = Process(target=func, args=(return_dict,),
+#                                        kwargs=kwargs)
+#                p.start()
+#                p.join(timeout)
+#                if p.is_alive():
+#                    p.terminate()
+#                    print('Simulation missed cut-off for protocol %s @%s seconds'\
+#                          %(protocol.name,timeout))
+#                del p
+#                return return_dict
+#
+#            start_time = time.time()
+#            resp_dict= timed_sim(run_func,(),{},timeout_var)
+#            end_time = time.time()
+#            sim_dur = end_time - start_time
+#            print('Simulation duration = {t} seconds for protocol {proto}'\
+#                  .format(t=sim_dur,proto=protocol.name))
+#
+#            if bool(resp_dict):
+#                responses.update(resp_dict['resp'])
+#                
+#                if self.cutoff_mode:
+#                    rnd_str = ''.join([random.choice(string.ascii_letters + string.digits) \
+#                                       for n in range(self.eval_range)])
+#                    stat_filename = '%s_%s.pkl'%(protocol.name,rnd_str)
+#                    stat_filepath = os.path.join(self.eval_stat_dir,stat_filename)
+#                    with open(stat_filepath, "wb") as stat:
+#                        pickle.dump(sim_dur,stat)
+#
+#        return self.fitness_calculator.calculate_scores(responses)
+#
