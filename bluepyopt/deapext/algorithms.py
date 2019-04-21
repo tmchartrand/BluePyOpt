@@ -80,7 +80,8 @@ def eaAlphaMuPlusLambdaCheckpoint(
         halloffame=None,
         cp_frequency=1,
         cp_filename=None,
-        continue_cp=False):
+        continue_cp=False,
+        **kwargs):
     r"""This is the :math:`(~\alpha,\mu~,~\lambda)` evolutionary algorithm
 
     Args:
@@ -151,5 +152,11 @@ def eaAlphaMuPlusLambdaCheckpoint(
             f =  open('logbook_info.txt','a')
             f.write('%s %s \n'%(logbook_stream, cp_filename.split('.')[0]))
             f.close()
+            
+        if kwargs.get('cp_backup') and gen % kwargs.get('cp_backup_frequency',5) == 0:
+            cp_backup = kwargs.get('cp_backup')
+            pickle.dump(cp, open(cp_backup, "wb"))
+            logger.debug('Wrote checkpoint backup to %s',cp_backup)
+            
 
     return population, halloffame, logbook, history

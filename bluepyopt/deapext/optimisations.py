@@ -264,7 +264,8 @@ class DEAPOptimisation(bluepyopt.optimisations.Optimisation):
             offspring_size=None,
             continue_cp=False,
             cp_filename=None,
-            cp_frequency=1):
+            cp_frequency=1,
+            **kwargs):
         """Run optimisation"""
         # Allow run function to override offspring_size
         # TODO probably in the future this should not be an object field
@@ -294,7 +295,8 @@ class DEAPOptimisation(bluepyopt.optimisations.Optimisation):
             halloffame=self.hof,
             cp_frequency=cp_frequency,
             continue_cp=continue_cp,
-            cp_filename=cp_filename)
+            cp_filename=cp_filename,
+            **kwargs)
 
         # Update hall of fame
         self.hof = hof
