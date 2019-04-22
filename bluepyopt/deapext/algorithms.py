@@ -104,7 +104,7 @@ def eaAlphaMuPlusLambdaCheckpoint(
         cp_filename(string): path to checkpoint filename
         continue_cp(bool): whether to continue
     """
-    eval_time_stats = []
+    eval_time_list = []
     
     if continue_cp:
         # A file name has been given, then load the data from the file
@@ -131,9 +131,9 @@ def eaAlphaMuPlusLambdaCheckpoint(
         _update_history_and_hof(halloffame, history, population)
         _record_stats(stats, logbook, start_gen, population, invalid_count)
 
-    eval_time_stats.extend(eval_times)
-#    eval_time_stats = [int(eval_time_) if eval_time_ is not None else eval_stat_default \
-#                       for eval_time_ in eval_time_stats]
+    eval_time_list.extend(eval_times)
+#    eval_time_list = [int(eval_time_) if eval_time_ is not None else eval_stat_default \
+#                       for eval_time_ in eval_time_list]
     
     # Begin the generational process
     for gen in range(start_gen + 1, ngen + 1):
@@ -141,7 +141,7 @@ def eaAlphaMuPlusLambdaCheckpoint(
 
         population = parents + offspring
         try:
-            eval_stat = int(np.percentile(eval_time_stats,eval_times_retain_percentile))
+            eval_stat = int(np.percentile(eval_time_list,eval_times_retain_percentile))
         except:
             eval_stat = eval_stat_default
         invalid_count,eval_times = _evaluate_invalid_fitness(toolbox, offspring,
@@ -175,15 +175,16 @@ def eaAlphaMuPlusLambdaCheckpoint(
             cp_backup = kwargs.get('cp_backup')
             pickle.dump(cp, open(cp_backup, "wb"))
             logger.debug('Wrote checkpoint backup to %s',cp_backup)
-            eval_f =  open('eval_stat.txt','a')
-            eval_f.write('{}\n'.format(str(eval_stat)))
-            eval_f.close()
+        
+        eval_f =  open('eval_stat.txt','a')
+        eval_f.write('{}\n'.format(str(eval_stat)))
+        eval_f.close()
             
-        eval_time_stats.extend(eval_times)
-#        eval_time_stats = [int(eval_time_) if eval_time_ is not None else eval_stat_default \
-#                       for eval_time_ in eval_time_stats]
+        eval_time_list.extend(eval_times)
+#        eval_time_list = [int(eval_time_) if eval_time_ is not None else eval_stat_default \
+#                       for eval_time_ in eval_time_list]
         logger.debug('evaluation time stats =  %s seconds',eval_stat)
-        if len(eval_time_stats) > 10*len(population):
-            eval_time_stats = eval_time_stats[-10*len(population):]
+        if len(eval_time_list) > 10*len(population):
+            eval_time_list = eval_time_list[-10*len(population):]
         
     return population, halloffame, logbook, history
