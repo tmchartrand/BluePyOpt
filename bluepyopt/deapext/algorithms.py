@@ -174,6 +174,6 @@ def eaAlphaMuPlusLambdaCheckpoint(
         eval_time_stats = [int(eval_time_) if eval_time_ is not None else eval_stat_default \
                        for eval_time_ in eval_time_stats]
         if len(eval_time_stats) > 2*len(population):
-            eval_time_stats = eval_time_stats[2*len(population):]
+            eval_time_stats = eval_time_stats[-2*len(population):]
         
     return population, halloffame, logbook, history
