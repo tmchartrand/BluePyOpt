@@ -27,10 +27,6 @@ from multiprocessing import Process,Manager
 import bluepyopt as bpopt
 import bluepyopt.tools
 import time
-import os,errno
-import string
-import random
-import glob
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -142,7 +138,7 @@ class CellEvaluator(bpopt.evaluators.Evaluator):
         for key in sorted_keys:
             string_ += '%s%s' % (key, str(param_dict[key]))
 
-        return bluepyopt.tools.uint32_seed(string)
+        return bluepyopt.tools.uint32_seed(string_)
 
     def run_protocol(
             self,
@@ -177,7 +173,7 @@ class CellEvaluator(bpopt.evaluators.Evaluator):
 
         return responses
 
-    def evaluate_with_dicts(self, param_dict=None):
+    def evaluate_with_dicts(self, param_dict=None,timeout_stat = None):
         """Run evaluation with dict as input and output"""
 
         if self.fitness_calculator is None:
@@ -250,10 +246,10 @@ class CellEvaluatorTimed(CellEvaluator):
     """Timed evaluation cell class"""
     def __init__(self, **kwargs):
         super(CellEvaluatorTimed, self).__init__(**kwargs)
-        self.timeout_thresh = kwargs.get('timeout',600)
-        self.timeout_thresh_min = 60
-        self.eval_range = kwargs.get('eval_range',2)
-        self.cutoff_mode = kwargs.get('cutoff_mode')
+        self.timeout_thresh = kwargs.get('timeout',900)
+        self.timeout_thresh_min = kwargs.get('timeout_min',60)
+#        self.eval_range = kwargs.get('eval_range',2)
+#        self.cutoff_mode = kwargs.get('cutoff_mode')
         
     
     def evaluate_with_dicts(self, param_dict=None,timeout_stat = None):
