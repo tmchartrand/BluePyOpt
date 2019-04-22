@@ -215,7 +215,6 @@ class CellEvaluator(bpopt.evaluators.Evaluator):
         """Run evaluation with lists as input and outputs"""
 
         param_dict = self.param_dict(param_list)
-        print(timeout_stat)
         obj_dict,sim_dur = self.evaluate_with_dicts(param_dict=param_dict,
                                             timeout_stat= timeout_stat)
 
@@ -251,21 +250,11 @@ class CellEvaluatorTimed(CellEvaluator):
     """Timed evaluation cell class"""
     def __init__(self, **kwargs):
         super(CellEvaluatorTimed, self).__init__(**kwargs)
-        self.eval_stat_dir = kwargs.get('eval_stat_dir',\
-                                os.path.join(os.getcwd(),'eval_stat'))
-
-        
-
-        self.timeout_thresh = kwargs.get('timeout',300)
+        self.timeout_thresh = kwargs.get('timeout',600)
+        self.timeout_thresh_min = 60
         self.eval_range = kwargs.get('eval_range',2)
         self.cutoff_mode = kwargs.get('cutoff_mode')
-        if self.cutoff_mode:
-            if not os.path.exists(self.eval_stat_dir):
-                try:
-                    os.makedirs(self.eval_stat_dir)
-                except OSError as exc: # Guard against race condition
-                    if exc.errno != errno.EEXIST:
-                        raise
+        
     
     def evaluate_with_dicts(self, param_dict=None,timeout_stat = None):
         """Run evaluation with dict as input and output"""
@@ -277,6 +266,9 @@ class CellEvaluatorTimed(CellEvaluator):
                 'CellEvaluator: need fitness_calculator to evaluate')
 
         logger.debug('Evaluating %s', self.cell_model.name)
+        
+        timeout = min(self.timeout_thresh,timeout_stat)
+        timeout = max(self.timeout_thresh_min,timeout_stat)
         
         def run_func(return_dict):
             results = self.run_protocols(
@@ -310,7 +302,7 @@ class CellEvaluatorTimed(CellEvaluator):
             return return_dict
         
         start_time = time.time()
-        resp_dict= timed_sim(run_func,(),{},min(self.timeout_thresh,timeout_stat))
+        resp_dict= timed_sim(run_func,(),{},timeout)
         end_time = time.time()
         sim_dur = end_time - start_time
         print('Simulation duration = {t} seconds for the individual'\

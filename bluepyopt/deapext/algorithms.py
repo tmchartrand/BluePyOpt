@@ -34,7 +34,7 @@ import numpy as np
 logger = logging.getLogger('__main__')
 
 
-def _evaluate_invalid_fitness(toolbox, population, eval_stat = 300):
+def _evaluate_invalid_fitness(toolbox, population, eval_stat = 600):
     '''Evaluate the individuals with an invalid fitness
 
     Returns the count of individuals with invalid fitness
@@ -86,7 +86,7 @@ def eaAlphaMuPlusLambdaCheckpoint(
         cp_frequency=1,
         cp_filename=None,
         continue_cp=False,
-        eval_stat_default = 300,
+        eval_stat_default = 600,
         **kwargs):
     r"""This is the :math:`(~\alpha,\mu~,~\lambda)` evolutionary algorithm
 
@@ -137,9 +137,9 @@ def eaAlphaMuPlusLambdaCheckpoint(
         offspring = _get_offspring(parents, toolbox, cxpb, mutpb)
 
         population = parents + offspring
-
+        eval_stat = int(np.percentile(eval_time_stats,80))
         invalid_count,eval_times = _evaluate_invalid_fitness(toolbox, offspring,
-                                     eval_stat = np.mean(eval_time_stats))
+                             eval_stat =eval_stat)
         _update_history_and_hof(halloffame, history, population)
         _record_stats(stats, logbook, gen, population, invalid_count)
 
@@ -173,6 +173,7 @@ def eaAlphaMuPlusLambdaCheckpoint(
         eval_time_stats.extend(eval_times)
         eval_time_stats = [int(eval_time_) if eval_time_ is not None else eval_stat_default \
                        for eval_time_ in eval_time_stats]
+        logger.debug('evaluation time stats =  %s',eval_stat)
         if len(eval_time_stats) > 2*len(population):
             eval_time_stats = eval_time_stats[-2*len(population):]
         
