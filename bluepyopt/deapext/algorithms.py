@@ -87,8 +87,8 @@ def eaAlphaMuPlusLambdaCheckpoint(
         cp_frequency=1,
         cp_filename=None,
         continue_cp=False,
-        eval_stat_default = 900,
-        eval_times_retain_percentile = 80,
+        eval_thresh_default = 900,
+        eval_times_retain_percentile = 95,
         **kwargs):
     r"""This is the :math:`(~\alpha,\mu~,~\lambda)` evolutionary algorithm
 
@@ -133,8 +133,7 @@ def eaAlphaMuPlusLambdaCheckpoint(
         _record_stats(stats, logbook, start_gen, population, invalid_count)
 
     eval_time_list.extend(eval_times)
-#    eval_time_list = [int(eval_time_) if eval_time_ is not None else eval_stat_default \
-#                       for eval_time_ in eval_time_list]
+
     
     # Begin the generational process
     for gen in range(start_gen + 1, ngen + 1):
@@ -144,7 +143,7 @@ def eaAlphaMuPlusLambdaCheckpoint(
         try:
             eval_stat = int(np.percentile(eval_time_list,eval_times_retain_percentile))
         except:
-            eval_stat = eval_stat_default
+            eval_stat = eval_thresh_default
         invalid_count,eval_times = _evaluate_invalid_fitness(toolbox, offspring,
                              eval_stat =eval_stat)
         _update_history_and_hof(halloffame, history, population)
@@ -183,8 +182,7 @@ def eaAlphaMuPlusLambdaCheckpoint(
         eval_f.close()
             
         eval_time_list.extend(eval_times)
-#        eval_time_list = [int(eval_time_) if eval_time_ is not None else eval_stat_default \
-#                       for eval_time_ in eval_time_list]
+
         logger.debug('evaluation time stats =  %s seconds',eval_stat)
         if len(eval_time_list) > 10*len(population):
             eval_time_list = eval_time_list[-10*len(population):]

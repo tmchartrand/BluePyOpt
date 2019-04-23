@@ -248,23 +248,26 @@ class CellEvaluatorTimed(CellEvaluator):
         super(CellEvaluatorTimed, self).__init__(**kwargs)
         self.timeout_thresh = kwargs.get('timeout',900)
         self.timeout_thresh_min = kwargs.get('timeout_min',60)
-#        self.eval_range = kwargs.get('eval_range',2)
-#        self.cutoff_mode = kwargs.get('cutoff_mode')
+        self.learn_eval_trend = kwargs.get('learn_eval_trend')
         
-    
+
     def evaluate_with_dicts(self, param_dict=None,timeout_stat = None):
         """Run evaluation with dict as input and output"""
         
-        if timeout_stat:
-            print('time out stats {} seconds'.format(timeout_stat))
+        
         if self.fitness_calculator is None:
             raise Exception(
                 'CellEvaluator: need fitness_calculator to evaluate')
 
         logger.debug('Evaluating %s', self.cell_model.name)
         
-        timeout = min(self.timeout_thresh,timeout_stat)
-        timeout = max(self.timeout_thresh_min,timeout_stat)
+        if  self.learn_eval_trend:
+            print('time out stats {} seconds'.format(timeout_stat))
+            timeout = min(self.timeout_thresh,timeout_stat)
+            timeout = max(self.timeout_thresh_min,timeout_stat)
+            
+        else:
+            timeout = self.timeout_thresh            
         
         def run_func(return_dict):
             results = self.run_protocols(
