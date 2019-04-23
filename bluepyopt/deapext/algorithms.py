@@ -30,6 +30,7 @@ import deap.tools
 import functools
 import pickle
 import numpy as np
+import os
 
 logger = logging.getLogger('__main__')
 
@@ -176,7 +177,8 @@ def eaAlphaMuPlusLambdaCheckpoint(
             pickle.dump(cp, open(cp_backup, "wb"))
             logger.debug('Wrote checkpoint backup to %s',cp_backup)
         
-        eval_f =  open('eval_stat.txt','a')
+        opt_seed = os.path.basename(cp_filename).split('.')[0]
+        eval_f =  open('eval_stat_%s.txt'%opt_seed,'a')
         eval_f.write('{}\n'.format(str(eval_stat)))
         eval_f.close()
             
