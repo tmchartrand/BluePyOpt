@@ -177,8 +177,8 @@ def eaAlphaMuPlusLambdaCheckpoint(
             logger.debug('Wrote checkpoint backup to %s',cp_backup)
         
         opt_seed = os.path.basename(cp_filename).split('.')[0]
-        eval_f =  open('eval_stat_%s.txt'%opt_seed,'a')
-        eval_f.write('{}\n'.format(str(eval_stat)))
+        eval_f =  open('eval_stat.txt','a')
+        eval_f.write('{time},{seed}\n'.format(time=str(eval_stat),seed=opt_seed))
         eval_f.close()
             
         eval_time_list.extend(eval_times)

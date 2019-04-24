@@ -247,7 +247,7 @@ class CellEvaluatorTimed(CellEvaluator):
     def __init__(self, **kwargs):
         super(CellEvaluatorTimed, self).__init__(**kwargs)
         self.timeout_thresh = kwargs.get('timeout',900)
-        self.timeout_thresh_min = kwargs.get('timeout_min',60)
+        self.timeout_thresh_min = kwargs.get('timeout_min',120)
         self.learn_eval_trend = kwargs.get('learn_eval_trend')
         
 
@@ -263,7 +263,7 @@ class CellEvaluatorTimed(CellEvaluator):
         
         if  self.learn_eval_trend:
             print('time out stats {} seconds'.format(timeout_stat))
-            timeout = min(self.timeout_thresh,timeout_stat)
+            timeout = min(self.timeout_thresh,int(timeout_stat*(1+np.random.rand())))
             timeout = max(self.timeout_thresh_min,timeout_stat)
             
         else:
