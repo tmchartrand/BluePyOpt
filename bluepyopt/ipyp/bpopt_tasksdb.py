@@ -29,7 +29,8 @@ import collections
 import datetime
 import dateutil.parser
 import itertools
-
+import matplotlib
+matplotlib.use('Agg')
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -69,31 +70,33 @@ def get_engine_data(tasksdb_filename):
 def plot_usage(tasks, engine_number_map):
     """Plot usage stats"""
 
-    plt.figure(figsize=(8, 8))
+    fig,ax = plt.subplots(figsize=(8, 8))
     for engine_uuid, task_list in tasks.iteritems():
         engine_number = engine_number_map[engine_uuid]
         number_list = [engine_number] * len(task_list)
         start_list = [task['started'] for task in task_list]
         completed_list = [task['completed'] for task in task_list]
-        plt.plot(
+        ax.plot(
             [number_list, number_list],
             [start_list, completed_list], linewidth=10,
             solid_capstyle="butt")
 
-    plt.xlim(min(engine_number_map.values()) - 1,
+    ax.set_xlim(min(engine_number_map.values()) - 1,
              max(engine_number_map.values()) + 1)
-    plt.xlabel('Compute engine number')
-    plt.ylabel('Compute time')
+    ax.set_xlabel('Compute engine number')
+    ax.set_ylabel('Compute time')
 
     idle_time, idle_perc = calculate_unused_compute(tasks)
     plt.title(
         'Cumulative idle time: %s, perc: %.2f %%' %
         (idle_time, idle_perc))
+    fig.savefig('Engine_Usage.pdf',dpi=80)
+    plt.close(fig)
 
 
 def plot_duration_histogram(tasks):
     """Plot duration histogram"""
-    plt.figure(figsize=(8, 8))
+    fig,ax = plt.subplots(figsize=(8, 8))
 
     durations = np.fromiter((t['duration']
                              for task_list in tasks.values()
@@ -105,6 +108,8 @@ def plot_duration_histogram(tasks):
     plt.ylabel('Count')
     plt.title('Histogram of task execution')
     plt.grid(True)
+    fig.savefig('Task_Histogram.pdf',dpi=80)
+    plt.close(fig)
 
 
 def calculate_unused_compute(tasks):
@@ -139,7 +144,7 @@ def run(arg_list):
     plot_usage(tasks, engine_number_map)
     plot_duration_histogram(tasks)
 
-    plt.show()
+#    plt.show()
 
 
 def main():
