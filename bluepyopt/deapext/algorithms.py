@@ -106,10 +106,10 @@ def eaAlphaMuPlusLambdaCheckpoint(
         continue_cp(bool): whether to continue
     """
     eval_time_list = []
-    
+
     if continue_cp:
         # A file name has been given, then load the data from the file
-        cp = pickle.load(open(cp_filename, "r"))
+        cp = pickle.load(open(cp_filename, "rb"))
         population = cp["population"]
         parents = cp["parents"]
         start_gen = cp["generation"]
@@ -118,7 +118,7 @@ def eaAlphaMuPlusLambdaCheckpoint(
         history = cp["history"]
         random.setstate(cp["rndstate"])
         eval_times = []
-        
+
     else:
         # Start a new evolution
         start_gen = 1
@@ -134,7 +134,7 @@ def eaAlphaMuPlusLambdaCheckpoint(
 
     eval_time_list.extend(eval_times)
 
-    
+
     # Begin the generational process
     for gen in range(start_gen + 1, ngen + 1):
         offspring = _get_offspring(parents, toolbox, cxpb, mutpb)
@@ -165,29 +165,29 @@ def eaAlphaMuPlusLambdaCheckpoint(
                       rndstate=random.getstate())
             pickle.dump(cp, open(cp_filename, "wb"))
             logger.debug('Wrote checkpoint to %s', cp_filename)
-            
+
             # Writing the generation statistics in a file
             f =  open('logbook_info.txt','a')
             f.write('%s %s \n'%(logbook_stream, cp_filename.split('.')[0]))
             f.close()
-            
+
         if kwargs.get('cp_backup') and gen % kwargs.get('cp_backup_frequency',5) == 0:
             cp_backup = kwargs.get('cp_backup')
             pickle.dump(cp, open(cp_backup, "wb"))
             logger.debug('Wrote checkpoint backup to %s',cp_backup)
-        
+
         opt_seed = os.path.basename(cp_filename).split('.')[0]
-        
+
         # Will not produce this file if the timed evaluation is turned off
         if any(eval_time_list):
             eval_f =  open('eval_stat.txt','a')
             eval_f.write('{time},{seed}\n'.format(time=str(eval_stat),seed=opt_seed))
             eval_f.close()
-            
+
         eval_time_list.extend(eval_times)
 
         logger.debug('evaluation time stats =  %s seconds',eval_stat)
         if len(eval_time_list) > 10*len(population):
             eval_time_list = eval_time_list[-10*len(population):]
-        
+
     return population, halloffame, logbook, history
