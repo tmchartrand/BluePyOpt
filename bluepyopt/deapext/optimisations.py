@@ -25,6 +25,8 @@ Copyright (c) 2016, EPFL/Blue Brain Project
 import random
 import logging
 import functools
+import pickle
+import os
 
 import deap
 import deap.base
@@ -275,7 +277,18 @@ class DEAPOptimisation(bluepyopt.optimisations.Optimisation):
             offspring_size = self.offspring_size
 
         # Generate the population object
-        pop = self.toolbox.population(n=offspring_size)
+        
+        
+        if kwargs.get('initialize_previous_pop') and os.path.exists(cp_filename):
+            OBJ_SIZE = len(self.evaluator.objectives)
+            cp = pickle.load(open(cp_filename, "rb"))
+            prev_pop = cp["population"]
+            pop = [WSListIndividual(list(prev_pop[i]),obj_size= OBJ_SIZE) for i in \
+                                   range(len(prev_pop))]
+#            kwargs.pop('initialize_previous_pop')
+            
+        else:
+            pop = self.toolbox.population(n=offspring_size)
 
         stats = deap.tools.Statistics(key=lambda ind: ind.fitness.sum)
         import numpy

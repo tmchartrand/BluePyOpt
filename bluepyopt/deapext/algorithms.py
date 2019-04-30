@@ -47,7 +47,7 @@ def _evaluate_invalid_fitness(toolbox, population, eval_stat = 900):
     eval_times = [times_ for _,times_ in fitnesses_with_times]
     for ind, fit in zip(invalid_ind, fitnesses):
         ind.fitness.values = fit
-
+    
     return len(invalid_ind),eval_times
 
 
@@ -69,7 +69,7 @@ def _record_stats(stats, logbook, gen, population, invalid_count):
 
 
 def _get_offspring(parents, toolbox, cxpb, mutpb):
-    '''return the offsprint, use toolbox.variate if possible'''
+    '''return the offspring, use toolbox.variate if possible'''
     if hasattr(toolbox, 'variate'):
         return toolbox.variate(parents, toolbox, cxpb, mutpb)
     return deap.algorithms.varAnd(parents, toolbox, cxpb, mutpb)
@@ -110,8 +110,9 @@ def eaAlphaMuPlusLambdaCheckpoint(
     if continue_cp:
         # A file name has been given, then load the data from the file
         cp = pickle.load(open(cp_filename, "rb"))
-        population = cp["population"]
-        parents = cp["parents"]
+        if not kwargs.get('initialize_previous_pop'):
+            population = cp["population"]
+            parents = cp["parents"]
         start_gen = cp["generation"]
         halloffame = cp["halloffame"]
         logbook = cp["logbook"]
@@ -122,13 +123,14 @@ def eaAlphaMuPlusLambdaCheckpoint(
     else:
         # Start a new evolution
         start_gen = 1
-        parents = population[:]
         logbook = deap.tools.Logbook()
         logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
         history = deap.tools.History()
 
-        # TODO this first loop should be not be repeated !
+    # TODO this first loop should be not be repeated !
+    if kwargs.get('initialize_previous_pop') or not continue_cp:
         invalid_count,eval_times = _evaluate_invalid_fitness(toolbox, population)
+        parents = toolbox.select(population, mu)
         _update_history_and_hof(halloffame, history, population)
         _record_stats(stats, logbook, start_gen, population, invalid_count)
 
