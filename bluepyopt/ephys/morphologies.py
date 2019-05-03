@@ -41,7 +41,7 @@ class Morphology(BaseEPhys):
 class NrnFileMorphology(Morphology, DictMixin):
 
     """Morphology loaded from a file"""
-    SERIALIZED_FIELDS = ('morphology_path', 'do_replace_axon', 'do_replace_axon_swc',
+    SERIALIZED_FIELDS = ('morphology_path', 'do_replace_axon',
                          'do_set_nseg', 'replace_axon_hoc', )
 
     def __init__(
@@ -145,14 +145,14 @@ class NrnFileMorphology(Morphology, DictMixin):
 
         for section in icell.all:
             section.nseg = 1 + 2 * int(section.L / 40)
-            
-            
+
+
     @staticmethod
     def replace_axon(sim=None, icell=None):
         """Read the AIS diameters from the swc file"""
 
         nsec = len([sec for sec in icell.axonal])
-        
+
         if nsec == 0:
             ais_diams = [1, 1]
         elif nsec == 1:
@@ -191,7 +191,7 @@ class NrnFileMorphology(Morphology, DictMixin):
     @staticmethod
     def replace_axon_with_stub(sim=None, icell=None):
         """Replace axon with 60 micron stub"""
-        
+
         ais_diams = [1, 1]
 
         for section in icell.axonal:
