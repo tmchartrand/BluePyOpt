@@ -49,8 +49,11 @@ class WeightedSumFitness(deap.base.Fitness):
 
     """Fitness that compares by weighted sum"""
 
-    def __init__(self, values=(), obj_size=None):
-        self.weights = [-1.0] * obj_size if obj_size is not None else [-1]
+    def __init__(self, values=(), obj_size=None,**kwargs):
+        if kwargs.get('weights'):
+            self.weights=kwargs.get('weights')
+        else:
+            self.weights = [-1.0] * obj_size if obj_size is not None else [-1]
 
         super(WeightedSumFitness, self).__init__(values)
 
@@ -85,8 +88,9 @@ class WSListIndividual(list):
 
     def __init__(self, *args, **kwargs):
         """Constructor"""
-        self.fitness = WeightedSumFitness(obj_size=kwargs['obj_size'])
-        del kwargs['obj_size']
+        obj_size = kwargs.pop('obj_size')
+        self.fitness = WeightedSumFitness(obj_size=obj_size,**kwargs)
+        kwargs.pop('weights',None)
         super(WSListIndividual, self).__init__(*args, **kwargs)
 
 
@@ -103,7 +107,8 @@ class DEAPOptimisation(bluepyopt.optimisations.Optimisation):
                  cxpb=1.0,
                  map_function=None,
                  hof=None,
-                 selector_name=None):
+                 selector_name=None,
+                 **kwargs):
         """Constructor
 
         Args:
@@ -142,6 +147,9 @@ class DEAPOptimisation(bluepyopt.optimisations.Optimisation):
 
         # Create a DEAP toolbox
         self.toolbox = deap.base.Toolbox()
+        
+        # Custom weight for features
+        self.weight_dict = kwargs.get('weight_dict')
 
         self.setup_deap()
 
@@ -151,6 +159,14 @@ class DEAPOptimisation(bluepyopt.optimisations.Optimisation):
         # Number of objectives
         OBJ_SIZE = len(self.evaluator.objectives)
 
+        if self.weight_dict and OBJ_SIZE:
+            weights = []
+            for obj in self.evaluator.objectives:
+                feature = obj.name.split('.')[-1]
+                weights.append(self.weight_dict.get(feature,-1))
+                
+        else:
+            weights = None
         # Set random seed
         random.seed(self.seed)
 
@@ -192,7 +208,7 @@ class DEAPOptimisation(bluepyopt.optimisations.Optimisation):
         self.toolbox.register(
             "Individual",
             deap.tools.initIterate,
-            functools.partial(WSListIndividual, obj_size=OBJ_SIZE),
+            functools.partial(WSListIndividual, obj_size=OBJ_SIZE, weights = weights),
             self.toolbox.uniformparams)
 
         # Register the population format. It is a list of individuals
