@@ -227,6 +227,9 @@ class DEAPOptimisation(bluepyopt.optimisations.Optimisation):
         
         # Register the evaluation function from the responses
         self.toolbox.register("evaluate_response", self.evaluator.evaluate_from_responses)
+        
+        # Register the feature calculation from the responses
+        self.toolbox.register("evaluate_features", self.evaluator.evaluate_features)
 
         # Register the mate operator
         self.toolbox.register(
@@ -297,12 +300,19 @@ class DEAPOptimisation(bluepyopt.optimisations.Optimisation):
         
         if kwargs.get('initialize_previous_pop') and os.path.exists(cp_filename):
             OBJ_SIZE = len(self.evaluator.objectives)
+            if self.weight_dict and OBJ_SIZE:
+                weights = []
+                for obj in self.evaluator.objectives:
+                    feature = obj.name.split('.')[-1]
+                    weights.append(self.weight_dict.get(feature,-1))
+                    
+            else:
+                weights = None
             cp = pickle.load(open(cp_filename, "rb"))
             prev_pop = cp["population"]
-            pop = [WSListIndividual(list(prev_pop[i]),obj_size= OBJ_SIZE) for i in \
-                                   range(len(prev_pop))]
-#            kwargs.pop('initialize_previous_pop')
-            
+            pop = [WSListIndividual(list(pop_),obj_size= OBJ_SIZE,weights= weights) \
+                                    for pop_ in prev_pop]
+
         else:
             pop = self.toolbox.population(n=offspring_size)
 

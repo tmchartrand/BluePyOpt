@@ -205,7 +205,10 @@ class CellEvaluator(bpopt.evaluators.Evaluator):
         response_dict = response_list[0]
         return self.fitness_calculator.calculate_scores(response_dict)
 
-
+    def evaluate_features(self, response_list = None):
+        """Calculate features with response dictionary as input"""
+        response_dict = response_list[0]
+        return self.fitness_calculator.calculate_features(response_dict)
 
     def evaluate_with_lists(self, param_list=None,timeout_stat=None):
         """Run evaluation with lists as input and outputs"""
