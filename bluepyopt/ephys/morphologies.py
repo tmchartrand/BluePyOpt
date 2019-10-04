@@ -73,7 +73,10 @@ class NrnFileMorphology(Morphology, DictMixin):
         self.do_set_nseg = do_set_nseg
 
         if replace_axon_hoc is None:
-            self.replace_axon_hoc = self.default_replace_axon_hoc
+            if self.stub_axon:
+                self.replace_axon_hoc = self.default_replace_axon_hoc_stub
+            else:
+                self.replace_axon_hoc = self.default_replace_axon_hoc
         else:
             self.replace_axon_hoc = replace_axon_hoc
 
@@ -235,6 +238,38 @@ proc replace_axon(){ local nSec, D1, D2
     }
   }
 
+  // get rid of the old axon
+  forsec axonal{
+    delete_section()
+  }
+
+  create axon[2]
+
+  axon[0] {
+    L = 30
+    diam = D1
+    nseg = 1 + 2*int(L/40)
+    all.append()
+    axonal.append()
+  }
+  axon[1] {
+    L = 30
+    diam = D2
+    nseg = 1 + 2*int(L/40)
+    all.append()
+    axonal.append()
+  }
+  nSecAxonal = 2
+  soma[0] connect axon[0](0), 1
+  axon[0] connect axon[1](0), 1
+}
+        '''
+        
+    default_replace_axon_hoc_stub = \
+        '''
+proc replace_axon(){ local D1, D2
+  D1 = D2 = 1
+ 
   // get rid of the old axon
   forsec axonal{
     delete_section()

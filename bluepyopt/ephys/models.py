@@ -272,7 +272,7 @@ class CellModel(Model):
 
         template_name = self.name
         morphology = os.path.basename(self.morphology.morphology_path)
-        if self.morphology.do_replace_axon:
+        if self.morphology.do_replace_axon or self.morphology.stub_axon:
             replace_axon = self.morphology.replace_axon_hoc
         else:
             replace_axon = None
