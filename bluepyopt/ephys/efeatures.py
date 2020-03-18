@@ -35,6 +35,79 @@ class EFeature(BaseEPhys):
     pass
 
 
+class VectorFeature(EFeature, DictMixin):
+    
+    SERIALIZED_FIELDS = ('name', 'recording_name',
+                         'stim_start', 'stim_end')
+    def __init__(
+            self,
+            name,
+            recording_name=None,
+            stim_start=None,
+            stim_end=None,
+            # maybe make exp input paths to .npy files?
+            exp_mean=None,
+            # exp_std=None,
+            force_max_score=False,
+            max_score=250
+            ):
+         """Base class for features evaluated from a specific time window of a sweep
+
+        Args:
+            name (str): name of the feature
+            recording_name (str): 
+            stim_start (float): stimulation start time (ms)
+            stim_end (float): stimulation end time (ms)
+        """
+
+        super(VectorFeature, self).__init__(name, comment)
+
+        self.recording_name = recording_name
+        self.stim_start = stim_start
+        self.stim_end = stim_end
+        self.force_max_score = force_max_score
+        self.max_score = max_score
+        self._load_experimental_trace_data()
+        
+    def _load_experimental_trace_data(self):
+        """"Load data from exp_mean parameter and store, run when initialized
+        (maybe also exp_std, or multiple traces?)
+        """
+        pass
+
+    def _load_response_trace(responses):
+        if self.recording_name not in responses or responses[self.recording_name] is None:
+            return None
+        tt = responses[self.recording_name]['time']
+        vv = responses[self.recording_name]['voltage']
+        return vv[(tt>self.stim_start) & (tt<self.stim_end)]
+
+    def _trace_distance(trace):\
+        """Distance between passed trace and stored experimental average
+        """
+        pass
+
+    def calculate_feature(self, responses):
+        """Calculate feature value.
+        Returns 0 as a hack, since objectives and other classes expect a scalar.
+        Could alternatively have evaluator.fitness_calculator.calculate_features
+        know to skip over this feature maybe?
+        """
+        return 0
+
+    def calculate_score(self, responses, trace_check=False):
+        trace = _load_response_trace(responses)
+        if trace is None:
+            score = self.max_score
+        else:
+            score = self._trace_distance(trace)
+            if self.force_max_score:
+                score = min(score, self.max_score)  
+
+        logger.debug('Calculated score for %s: %f', self.name, score)
+
+        return score
+
 class eFELFeature(EFeature, DictMixin):
 
     """eFEL feature"""
@@ -68,7 +141,7 @@ class eFELFeature(EFeature, DictMixin):
             efel_feature_name (str): name of the eFeature in the eFEL library
                 (ex: 'AP1_peak')
             recording_names (dict): eFEL features can accept several recordings
-                as input
+                as input. Keys are location names, items are recording names
             stim_start (float): stimulation start time (ms)
             stim_end (float): stimulation end time (ms)
             exp_mean (float): experimental mean of this eFeature
